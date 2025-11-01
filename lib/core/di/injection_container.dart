@@ -1,6 +1,8 @@
 import 'package:get_it/get_it.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:pixelator/domain/usecases/get_case_by_id_usecase.dart';
+import 'package:pixelator/presentation/cubit/case_detail_cubit.dart';
 import '../../data/data_sources/auth_remote_data_source.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -26,16 +28,16 @@ Future<void> init() async {
   sl.registerFactory(() => LogoutCubit(sl()));
   sl.registerFactory(() => AuthCubit(sl()));
   sl.registerFactory(() => CasesCubit(sl()));
+  sl.registerFactory(() => CaseDetailCubit(sl()));
 
   // Use Cases
   sl.registerLazySingleton(() => LoginUseCase(sl()));
   sl.registerLazySingleton(() => GetCurrentUserUseCase(sl()));
   sl.registerLazySingleton(() => GetCasesUseCase(sl()));
+  sl.registerLazySingleton(() => GetCaseByIdUseCase(sl()));
 
   // Repositories
-  sl.registerLazySingleton<CaseRepository>(
-    () => CaseRepositoryImpl(sl()),
-  );
+  sl.registerLazySingleton<CaseRepository>(() => CaseRepositoryImpl(sl()));
 
   // Repositories
   sl.registerLazySingleton<AuthRepository>(
@@ -54,15 +56,11 @@ Future<void> init() async {
   // Storage
   sl.registerLazySingleton<FlutterSecureStorage>(
     () => const FlutterSecureStorage(
-      aOptions: AndroidOptions(
-        encryptedSharedPreferences: true,
-      ),
+      aOptions: AndroidOptions(encryptedSharedPreferences: true),
     ),
   );
 
-  sl.registerLazySingleton<TokenStorage>(
-    () => TokenStorageImpl(sl()),
-  );
+  sl.registerLazySingleton<TokenStorage>(() => TokenStorageImpl(sl()));
 
   // Dio with interceptor
   final dio = Dio(

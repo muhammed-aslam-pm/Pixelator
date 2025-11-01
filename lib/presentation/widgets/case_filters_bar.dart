@@ -56,6 +56,10 @@ class _CaseFiltersBarState extends State<CaseFiltersBar> {
     if (oldWidget.initialSearchQuery != widget.initialSearchQuery) {
       _searchController.text = widget.initialSearchQuery;
     }
+    // Add this to rebuild when selectedPriority changes
+    if (oldWidget.selectedPriority != widget.selectedPriority) {
+      setState(() {});
+    }
   }
 
   @override
@@ -68,7 +72,7 @@ class _CaseFiltersBarState extends State<CaseFiltersBar> {
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 600;
-    
+
     if (isMobile) {
       // Mobile: Stack vertically
       return Column(
@@ -135,32 +139,53 @@ class _CaseFiltersBarState extends State<CaseFiltersBar> {
                     itemBuilder: (context) => [
                       const PopupMenuItem(
                         value: null,
-                        child: Text('All Priorities', style: TextStyle(color: Colors.white)),
+                        child: Text(
+                          'All Priorities',
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ),
                       const PopupMenuItem(
                         value: '1',
-                        child: Text('Critical', style: TextStyle(color: Colors.white)),
+                        child: Text(
+                          'Critical',
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ),
                       const PopupMenuItem(
                         value: '2',
-                        child: Text('High', style: TextStyle(color: Colors.white)),
+                        child: Text(
+                          'High',
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ),
                       const PopupMenuItem(
                         value: '3',
-                        child: Text('Medium', style: TextStyle(color: Colors.white)),
+                        child: Text(
+                          'Medium',
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ),
                       const PopupMenuItem(
                         value: '4',
-                        child: Text('Low', style: TextStyle(color: Colors.white)),
+                        child: Text(
+                          'Low',
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ),
                       const PopupMenuItem(
                         value: '5',
-                        child: Text('Very Low', style: TextStyle(color: Colors.white)),
+                        child: Text(
+                          'Very Low',
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ),
                     ],
                     onSelected: widget.onPriorityChanged,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF2D3748),
                         borderRadius: BorderRadius.circular(12),
@@ -172,7 +197,10 @@ class _CaseFiltersBarState extends State<CaseFiltersBar> {
                             _getPriorityText(),
                             style: const TextStyle(color: Colors.white),
                           ),
-                          const Icon(Icons.arrow_drop_down, color: Colors.white70),
+                          const Icon(
+                            Icons.arrow_drop_down,
+                            color: Colors.white70,
+                          ),
                         ],
                       ),
                     ),
@@ -188,7 +216,10 @@ class _CaseFiltersBarState extends State<CaseFiltersBar> {
                   backgroundColor: const Color(0xFF2D3748),
                   foregroundColor: Colors.white,
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -199,7 +230,7 @@ class _CaseFiltersBarState extends State<CaseFiltersBar> {
         ],
       );
     }
-    
+
     // Desktop: Horizontal row
     return Row(
       children: [
@@ -209,7 +240,8 @@ class _CaseFiltersBarState extends State<CaseFiltersBar> {
             focusNode: _searchFocusNode,
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
-              hintText: 'Search cases by name, number, hospital, or patient ID...',
+              hintText:
+                  'Search cases by name, number, hospital, or patient ID...',
               hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
               prefixIcon: const Icon(Icons.search, color: Colors.white70),
               suffixIcon: _searchController.text.isNotEmpty
@@ -264,7 +296,10 @@ class _CaseFiltersBarState extends State<CaseFiltersBar> {
             itemBuilder: (context) => [
               const PopupMenuItem(
                 value: null,
-                child: Text('All Priorities', style: TextStyle(color: Colors.white)),
+                child: Text(
+                  'All Priorities',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
               const PopupMenuItem(
                 value: '1',

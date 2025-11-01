@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:pixelator/data/models/case_model.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/exceptions/auth_exceptions.dart';
 import '../../core/utils/logger.dart';
@@ -29,6 +30,7 @@ abstract class CaseRemoteDataSource {
     int page = 1,
     int size = 20,
   });
+  Future<CaseModel> getCaseById(int caseId);
 }
 
 class CaseRemoteDataSourceImpl implements CaseRemoteDataSource {
@@ -61,10 +63,7 @@ class CaseRemoteDataSourceImpl implements CaseRemoteDataSource {
     int page = 1,
     int size = 20,
   }) async {
-    final queryParams = <String, dynamic>{
-      'page': page,
-      'size': size,
-    };
+    final queryParams = <String, dynamic>{'page': page, 'size': size};
 
     if (caseName != null && caseName.isNotEmpty) {
       queryParams['case_name'] = caseName;
@@ -151,14 +150,15 @@ class CaseRemoteDataSourceImpl implements CaseRemoteDataSource {
           'Get cases failed with status: ${response.statusCode}',
           response.data,
         );
-        throw ServerException(
-          'Failed to get cases',
-          response.statusCode,
-        );
+        throw ServerException('Failed to get cases', response.statusCode);
       }
     } on DioException catch (e) {
       AppLogger.apiError('GET', AppConstants.casesEndpoint, e);
-      AppLogger.e('Get cases DioException: ${e.type}', e.response?.data, e.stackTrace);
+      AppLogger.e(
+        'Get cases DioException: ${e.type}',
+        e.response?.data,
+        e.stackTrace,
+      );
 
       if (e.response?.statusCode == 401) {
         AppLogger.w('Get cases unauthorized');
@@ -167,10 +167,14 @@ class CaseRemoteDataSourceImpl implements CaseRemoteDataSource {
           e.type == DioExceptionType.receiveTimeout ||
           e.type == DioExceptionType.sendTimeout) {
         AppLogger.e('Get cases timeout');
-        throw const NetworkException('Connection timeout. Please check your internet connection.');
+        throw const NetworkException(
+          'Connection timeout. Please check your internet connection.',
+        );
       } else if (e.type == DioExceptionType.connectionError) {
         AppLogger.e('Get cases connection error');
-        throw const NetworkException('No internet connection. Please check your network settings.');
+        throw const NetworkException(
+          'No internet connection. Please check your network settings.',
+        );
       } else if (e.response != null) {
         final statusCode = e.response!.statusCode;
         if (statusCode != null && statusCode >= 500) {
@@ -198,5 +202,81 @@ class CaseRemoteDataSourceImpl implements CaseRemoteDataSource {
       throw ServerException('Unexpected error: ${e.toString()}');
     }
   }
-}
 
+  @override
+  Future<CaseModel> getCaseById(int caseId) async {
+    final endpoint = '${AppConstants.casesEndpoint}$caseId/';
+    AppLogger.apiCall('GET', endpoint, data: {'case_id': caseId});
+
+    try {
+      final response = await dio.get(endpoint);
+
+      AppLogger.apiResponse(
+        'GET',
+        endpoint,
+        response.statusCode,
+        response.data,
+      );
+
+      if (response.statusCode == 200) {
+        final caseModel = CaseModel.fromJson(response.data);
+        AppLogger.i('Case fetched: ${caseModel.caseName}');
+        return caseModel;
+      } else {
+        AppLogger.e(
+          'Get case failed with status: ${response.statusCode}',
+          response.data,
+        );
+        throw ServerException('Failed to get case', response.statusCode);
+      }
+    } on DioException catch (e) {
+      AppLogger.apiError('GET', endpoint, e);
+      AppLogger.e(
+        'Get case DioException: ${e.type}',
+        e.response?.data,
+        e.stackTrace,
+      );
+
+      if (e.response?.statusCode == 401) {
+        AppLogger.w('Get case unauthorized');
+        throw const AuthException('Unauthorized. Please login again.', 401);
+      } else if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        AppLogger.e('Get case timeout');
+        throw const NetworkException(
+          'Connection timeout. Please check your internet connection.',
+        );
+      } else if (e.type == DioExceptionType.connectionError) {
+        AppLogger.e('Get case connection error');
+        throw const NetworkException(
+          'No internet connection. Please check your network settings.',
+        );
+      } else if (e.response != null) {
+        final statusCode = e.response!.statusCode;
+        if (statusCode != null && statusCode >= 500) {
+          AppLogger.e('Get case server error: $statusCode');
+          throw ServerException(
+            'Server error. Please try again later.',
+            statusCode,
+          );
+        }
+        AppLogger.e('Get case error: ${e.response?.data}');
+        throw ServerException(
+          e.response?.data?['detail'] ?? 'Failed to get case',
+          statusCode,
+        );
+      } else {
+        AppLogger.e('Get case network error: ${e.message}');
+        throw NetworkException('Network error: ${e.message}');
+      }
+    } catch (e, stackTrace) {
+      if (e is AuthException) {
+        AppLogger.e('Get case AuthException: ${e.message}', stackTrace);
+        rethrow;
+      }
+      AppLogger.e('Get case unexpected error: ${e.toString()}', e, stackTrace);
+      throw ServerException('Unexpected error: ${e.toString()}');
+    }
+  }
+}

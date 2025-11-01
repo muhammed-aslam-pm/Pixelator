@@ -1,3 +1,5 @@
+import 'package:pixelator/domain/entities/case_entity.dart';
+
 import '../entities/cases_response_entity.dart';
 
 abstract class CaseRepository {
@@ -25,5 +27,5 @@ abstract class CaseRepository {
     int page = 1,
     int size = 20,
   });
+  Future<CaseEntity> getCaseById(int caseId);
 }
-

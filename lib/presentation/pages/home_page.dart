@@ -57,7 +57,14 @@ class _HomePageState extends State<HomePage> {
 
   void _handlePriorityChange(String? priority, CasesCubit cubit) {
     setState(() {
-      _priorityFilter = priority != null ? int.tryParse(priority) : null;
+      if (priority == null ||
+          priority.isEmpty ||
+          priority.toLowerCase() == 'all' ||
+          priority == '0') {
+        _priorityFilter = null;
+      } else {
+        _priorityFilter = int.tryParse(priority);
+      }
       _currentPage = 1;
     });
     _loadCases(cubit);

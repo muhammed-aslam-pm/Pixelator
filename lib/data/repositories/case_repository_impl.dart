@@ -1,3 +1,5 @@
+import 'package:pixelator/domain/entities/case_entity.dart';
+
 import '../../domain/entities/cases_response_entity.dart';
 import '../../domain/repositories/case_repository.dart';
 import '../data_sources/case_remote_data_source.dart';
@@ -58,5 +60,10 @@ class CaseRepositoryImpl implements CaseRepository {
     );
     return response.toEntity();
   }
-}
 
+  @override
+  Future<CaseEntity> getCaseById(int caseId) async {
+    final caseModel = await remoteDataSource.getCaseById(caseId);
+    return caseModel.toEntity();
+  }
+}
