@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pixelator/core/constants/app_constants.dart';
 import '../cubit/logout_cubit.dart';
 import '../cubit/cases_cubit.dart';
 import '../widgets/app_drawer.dart';
@@ -125,15 +126,18 @@ class _HomePageState extends State<HomePage> {
             appBar: AppBar(
               backgroundColor: const Color(0xFF2D3748),
               elevation: 0,
-              title: const Text(
-                'GENESYS PIXELATOR',
-                style: TextStyle(
-                  color: Color(0xFF4299E1),
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                ),
-              ),
+
+              // title: const Text(
+              //   'GENESYS PIXELATOR',
+              //   style: TextStyle(
+              //     color: Color(0xFF4299E1),
+              //     fontSize: 20,
+              //     fontWeight: FontWeight.bold,
+              //     letterSpacing: 1.2,
+              //   ),
+              // ),
+              title: Image.asset(AppConstants.appLogo, width: 200),
+              titleSpacing: 0,
               actions: [
                 IconButton(
                   icon: const Icon(
@@ -151,157 +155,162 @@ class _HomePageState extends State<HomePage> {
 
                 return SingleChildScrollView(
                   padding: EdgeInsets.all(isMobile ? 16 : 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Title Section
-                      Text(
-                        'Case Management',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: isMobile ? 24 : 28,
-                          fontWeight: FontWeight.bold,
+                  child: SafeArea(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Title Section
+                        Text(
+                          'Case Management',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: isMobile ? 24 : 28,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Manage medical cases, assignments, and workflows',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: isMobile ? 14 : 16,
+                        const SizedBox(height: 8),
+                        Text(
+                          'Manage medical cases, assignments, and workflows',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: isMobile ? 14 : 16,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      // BlocBuilder for data-dependent widgets
-                      BlocBuilder<CasesCubit, CasesState>(
-                        builder: (context, state) {
-                          // Use last response for summary cards if loading
-                          CasesResponseEntity? responseToUse;
-                          bool isLoading = false;
+                        const SizedBox(height: 24),
+                        // BlocBuilder for data-dependent widgets
+                        BlocBuilder<CasesCubit, CasesState>(
+                          builder: (context, state) {
+                            // Use last response for summary cards if loading
+                            CasesResponseEntity? responseToUse;
+                            bool isLoading = false;
 
-                          if (state is CasesLoaded) {
-                            _lastResponse = state.response;
-                            responseToUse = state.response;
-                          } else if (state is CasesLoading) {
-                            isLoading = true;
-                            responseToUse = _lastResponse; // Use cached data
-                          } else if (state is CasesError) {
-                            responseToUse =
-                                _lastResponse; // Use cached data on error
-                          } else {
-                            responseToUse = _lastResponse;
-                          }
+                            if (state is CasesLoaded) {
+                              _lastResponse = state.response;
+                              responseToUse = state.response;
+                            } else if (state is CasesLoading) {
+                              isLoading = true;
+                              responseToUse = _lastResponse; // Use cached data
+                            } else if (state is CasesError) {
+                              responseToUse =
+                                  _lastResponse; // Use cached data on error
+                            } else {
+                              responseToUse = _lastResponse;
+                            }
 
-                          final cases = responseToUse?.cases ?? [];
-                          final totalCases = responseToUse?.total ?? 0;
-                          final activeCases = _calculateActiveCases(cases);
-                          final pendingCases = _calculatePendingCases(cases);
-                          final completedCases = _calculateCompletedCases(
-                            cases,
-                          );
+                            final cases = responseToUse?.cases ?? [];
+                            final totalCases = responseToUse?.total ?? 0;
+                            final activeCases = _calculateActiveCases(cases);
+                            final pendingCases = _calculatePendingCases(cases);
+                            final completedCases = _calculateCompletedCases(
+                              cases,
+                            );
 
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Summary Cards - always show
-                              CaseSummaryCards(
-                                totalCases: totalCases,
-                                activeCases: activeCases,
-                                pendingCases: pendingCases,
-                                completedCases: completedCases,
-                              ),
-                              const SizedBox(height: 24),
-                              // Filters Bar - always show
-                              CaseFiltersBar(
-                                initialSearchQuery: _searchQuery,
-                                selectedPriority: _priorityFilter,
-                                onSearchChanged: (query) => _handleSearch(
-                                  query,
-                                  context.read<CasesCubit>(),
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Summary Cards - always show
+                                CaseSummaryCards(
+                                  totalCases: totalCases,
+                                  activeCases: activeCases,
+                                  pendingCases: pendingCases,
+                                  completedCases: completedCases,
                                 ),
-                                onPriorityChanged: (priority) =>
-                                    _handlePriorityChange(
-                                      priority,
-                                      context.read<CasesCubit>(),
-                                    ),
-                                onFiltersTap: _handleFiltersTap,
-                              ),
-                              const SizedBox(height: 24),
-                              // Cases Table - show loading only here
-                              if (isLoading && responseToUse == null)
-                                const Center(
-                                  child: Padding(
-                                    padding: EdgeInsets.all(32.0),
-                                    child: CircularProgressIndicator(
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Color(0xFF4299E1),
-                                      ),
-                                    ),
-                                  ),
-                                )
-                              else if (state is CasesError &&
-                                  responseToUse == null)
-                                Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(
-                                        Icons.error_outline,
-                                        color: Colors.red,
-                                        size: 64,
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        state.message,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                      const SizedBox(height: 16),
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          final cubit = context
-                                              .read<CasesCubit>();
-                                          _loadCases(cubit);
-                                        },
-                                        child: const Text('Retry'),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              else if (responseToUse != null)
-                                CasesTable(
-                                  cases: cases,
-                                  currentPage: responseToUse.page,
-                                  pageSize: responseToUse.size,
-                                  totalPages: responseToUse.pages,
-                                  onPageChanged: (page) => _handlePageChanged(
-                                    page,
+                                const SizedBox(height: 24),
+                                // Filters Bar - always show
+                                CaseFiltersBar(
+                                  initialSearchQuery: _searchQuery,
+                                  selectedPriority: _priorityFilter,
+                                  onSearchChanged: (query) => _handleSearch(
+                                    query,
                                     context.read<CasesCubit>(),
                                   ),
-                                  onPageSizeChanged: (size) =>
-                                      _handlePageSizeChanged(
-                                        size,
+                                  onPriorityChanged: (priority) =>
+                                      _handlePriorityChange(
+                                        priority,
                                         context.read<CasesCubit>(),
                                       ),
-                                )
-                              else
-                                const Center(
-                                  child: Padding(
-                                    padding: EdgeInsets.all(32.0),
-                                    child: CircularProgressIndicator(
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Color(0xFF4299E1),
+                                  onFiltersTap: _handleFiltersTap,
+                                ),
+                                const SizedBox(height: 24),
+                                // Cases Table - show loading only here
+                                if (isLoading && responseToUse == null)
+                                  const Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.all(32.0),
+                                      child: CircularProgressIndicator(
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Color(0xFF4299E1),
+                                            ),
+                                      ),
+                                    ),
+                                  )
+                                else if (state is CasesError &&
+                                    responseToUse == null)
+                                  Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(
+                                          Icons.error_outline,
+                                          color: Colors.red,
+                                          size: 64,
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Text(
+                                          state.message,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        const SizedBox(height: 16),
+                                        ElevatedButton(
+                                          onPressed: () {
+                                            final cubit = context
+                                                .read<CasesCubit>();
+                                            _loadCases(cubit);
+                                          },
+                                          child: const Text('Retry'),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                else if (responseToUse != null)
+                                  CasesTable(
+                                    cases: cases,
+                                    currentPage: responseToUse.page,
+                                    pageSize: responseToUse.size,
+                                    totalPages: responseToUse.pages,
+                                    onPageChanged: (page) => _handlePageChanged(
+                                      page,
+                                      context.read<CasesCubit>(),
+                                    ),
+                                    onPageSizeChanged: (size) =>
+                                        _handlePageSizeChanged(
+                                          size,
+                                          context.read<CasesCubit>(),
+                                        ),
+                                  )
+                                else
+                                  const Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.all(32.0),
+                                      child: CircularProgressIndicator(
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Color(0xFF4299E1),
+                                            ),
                                       ),
                                     ),
                                   ),
-                                ),
-                            ],
-                          );
-                        },
-                      ),
-                    ],
+                              ],
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },

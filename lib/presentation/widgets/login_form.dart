@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pixelator/core/constants/app_constants.dart';
 import '../cubit/login_cubit.dart';
 import '../cubit/auth_cubit.dart';
 import '../pages/home_page.dart';
@@ -27,9 +28,9 @@ class _LoginFormState extends State<LoginForm> {
   void _handleLogin() {
     if (_formKey.currentState!.validate()) {
       context.read<LoginCubit>().login(
-            _emailController.text.trim(),
-            _passwordController.text,
-          );
+        _emailController.text.trim(),
+        _passwordController.text,
+      );
     }
   }
 
@@ -49,9 +50,7 @@ class _LoginFormState extends State<LoginForm> {
           );
           // Navigate to home
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (_) => HomePage(user: state.user),
-            ),
+            MaterialPageRoute(builder: (_) => HomePage(user: state.user)),
           );
         } else if (state is LoginError) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -80,6 +79,7 @@ class _LoginFormState extends State<LoginForm> {
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24.0),
               child: Card(
+                color: Colors.black.withOpacity(0.2),
                 elevation: 8,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -93,24 +93,22 @@ class _LoginFormState extends State<LoginForm> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // Logo or App Name
-                        const Text(
-                          'PIXELATOR',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF4299E1),
-                            letterSpacing: 2,
-                          ),
-                        ),
+                        // const Text(
+                        //   'PIXELATOR',
+                        //   textAlign: TextAlign.center,
+                        //   style: TextStyle(
+                        //     fontSize: 32,
+                        //     fontWeight: FontWeight.bold,
+                        //     color: Color(0xFF4299E1),
+                        //     letterSpacing: 2,
+                        //   ),
+                        // ),
+                        Image.asset(AppConstants.appLogo, width: 250),
                         const SizedBox(height: 8),
                         const Text(
                           'Sign in to your account',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.white70,
-                          ),
+                          style: TextStyle(fontSize: 16, color: Colors.white70),
                         ),
                         const SizedBox(height: 32),
                         // Email Field
@@ -119,21 +117,31 @@ class _LoginFormState extends State<LoginForm> {
                           keyboardType: TextInputType.emailAddress,
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
-                            labelText: 'Email',
+                            // labelText: 'Email',
                             hintText: 'Enter your email',
-                            hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                            labelStyle: const TextStyle(color: Colors.white70),
+                            hintStyle: TextStyle(
+                              color: Colors.white.withOpacity(0.5),
+                            ),
+                            // labelStyle: const TextStyle(
+                            //   color: Color(0xFF4299E1),
+                            // ),
                             prefixIcon: const Icon(
                               Icons.email_outlined,
                               color: Colors.white70,
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
+                              borderSide: const BorderSide(
+                                color: Color(0xFF4299E1),
+                                width: 2,
+                              ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
+                              borderSide: const BorderSide(
+                                color: Color(0xFF4299E1),
+                                width: 2,
+                              ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -162,10 +170,12 @@ class _LoginFormState extends State<LoginForm> {
                           obscureText: _obscurePassword,
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
-                            labelText: 'Password',
+                            // labelText: 'Password',
                             hintText: 'Enter your password',
-                            hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                            labelStyle: const TextStyle(color: Colors.white70),
+                            hintStyle: TextStyle(
+                              color: Colors.white.withOpacity(0.5),
+                            ),
+                            // labelStyle: const TextStyle(color: Colors.white70),
                             prefixIcon: const Icon(
                               Icons.lock_outlined,
                               color: Colors.white70,
@@ -185,11 +195,17 @@ class _LoginFormState extends State<LoginForm> {
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
+                              borderSide: const BorderSide(
+                                color: Color(0xFF4299E1),
+                                width: 2,
+                              ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
+                              borderSide: const BorderSide(
+                                color: Color(0xFF4299E1),
+                                width: 2,
+                              ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -223,7 +239,9 @@ class _LoginFormState extends State<LoginForm> {
                                 backgroundColor: const Color(0xFF4299E1),
                                 foregroundColor: Colors.white,
                                 disabledBackgroundColor: Colors.grey,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -235,9 +253,10 @@ class _LoginFormState extends State<LoginForm> {
                                       width: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                          Colors.white,
-                                        ),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
                                       ),
                                     )
                                   : const Text(

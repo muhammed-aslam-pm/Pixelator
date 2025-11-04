@@ -13,4 +13,6 @@ class AppConstants {
   static const String tokenTypeKey = 'token_type';
   static const String expiresInKey = 'expires_in';
   static const String tokenExpiryKey = 'token_expiry';
+
+  static const String appLogo = 'assets/images/pixelator.png';
 }
