@@ -64,5 +64,9 @@ class MediaRepositoryImpl implements MediaRepository {
   ) async {
     await remote.uploadToPresignedUrl(url, bytes, contentType, onProgress);
   }
-}
 
+  @override
+  Future<void> deleteMediaFile(int caseId, int mediaFileId) async {
+    await remote.deleteMediaFile(caseId, mediaFileId);
+  }
+}

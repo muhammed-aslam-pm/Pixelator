@@ -35,7 +35,7 @@ Future<void> init() async {
   sl.registerFactory(() => AuthCubit(sl()));
   sl.registerFactory(() => CasesCubit(sl()));
   sl.registerFactory(() => CaseDetailCubit(sl()));
-  sl.registerFactory(() => CaseMediaCubit(sl(), sl(), sl(), sl()));
+  sl.registerFactory(() => CaseMediaCubit(sl(), sl(), sl(), sl(), sl()));
 
   // Use Cases
   sl.registerLazySingleton(() => LoginUseCase(sl()));
@@ -46,6 +46,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => GetPresignedUrlUseCase(sl()));
   sl.registerLazySingleton(() => ConfirmUploadUseCase(sl()));
   sl.registerLazySingleton(() => UploadToS3UseCase(sl()));
+  sl.registerLazySingleton(() => DeleteMediaFileUseCase(sl()));
 
   // Repositories
   sl.registerLazySingleton<CaseRepository>(() => CaseRepositoryImpl(sl()));

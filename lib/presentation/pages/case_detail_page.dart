@@ -317,7 +317,7 @@ class CaseDetailPage extends StatelessWidget {
           _buildDetailCard('Media Library', [
             BlocProvider(
               create: (_) =>
-                  CaseMediaCubit(di.sl(), di.sl(), di.sl(), di.sl())
+                  CaseMediaCubit(di.sl(), di.sl(), di.sl(), di.sl(), di.sl())
                     ..fetch(caseEntity.caseId),
               child: CaseMediaSection(caseId: caseEntity.caseId),
             ),
@@ -512,6 +512,7 @@ class _CaseMediaSectionState extends State<CaseMediaSection> {
                 ),
               );
             }
+
             if (mediaState.items.isEmpty) {
               return const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16.0),
@@ -521,6 +522,7 @@ class _CaseMediaSectionState extends State<CaseMediaSection> {
                 ),
               );
             }
+
             return GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -533,24 +535,53 @@ class _CaseMediaSectionState extends State<CaseMediaSection> {
               itemBuilder: (context, index) {
                 final item = mediaState.items[index];
                 final String? url = item.s3Url;
-                return Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: const Color(0xFF4A5568),
-                      width: 1,
+
+                return Stack(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xFF4A5568),
+                          width: 1,
+                        ),
+                        color: const Color(0xFF1A202C),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: url == null
+                          ? const Center(
+                              child: Icon(
+                                Icons.image_not_supported,
+                                color: Color(0xFFA0AEC0),
+                              ),
+                            )
+                          : Image.network(url, fit: BoxFit.cover),
                     ),
-                    color: const Color(0xFF1A202C),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: url == null
-                      ? const Center(
-                          child: Icon(
-                            Icons.image_not_supported,
-                            color: Color(0xFFA0AEC0),
+                    // Delete button overlay
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: GestureDetector(
+                        onTap: () => _showDeleteConfirmation(
+                          context,
+                          widget.caseId,
+                          item.mediaFileId,
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.9),
+                            shape: BoxShape.circle,
                           ),
-                        )
-                      : Image.network(url, fit: BoxFit.cover),
+                          child: const Icon(
+                            Icons.delete,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 );
               },
             );
@@ -608,6 +639,44 @@ class _CaseMediaSectionState extends State<CaseMediaSection> {
               style: const TextStyle(color: Colors.white, fontSize: 12),
               textAlign: TextAlign.right,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(
+    BuildContext context,
+    int caseId,
+    int mediaFileId,
+  ) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF2D3748),
+        title: const Text(
+          'Delete Media',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'Are you sure you want to delete this media file?',
+          style: TextStyle(color: Color(0xFFA0AEC0)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              context.read<CaseMediaCubit>().deleteMediaFile(
+                caseId,
+                mediaFileId,
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete'),
           ),
         ],
       ),

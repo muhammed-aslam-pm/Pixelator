@@ -12,9 +12,14 @@ class CaseMediaCubit extends Cubit<CaseMediaState> {
   final GetPresignedUrlUseCase getPresigned;
   final UploadToS3UseCase uploadToS3;
   final ConfirmUploadUseCase confirmUpload;
-
-  CaseMediaCubit(this.getMedia, this.getPresigned, this.uploadToS3, this.confirmUpload)
-      : super(const CaseMediaState());
+  final DeleteMediaFileUseCase deleteMedia;
+  CaseMediaCubit(
+    this.getMedia,
+    this.getPresigned,
+    this.uploadToS3,
+    this.confirmUpload,
+    this.deleteMedia,
+  ) : super(const CaseMediaState());
 
   Future<void> fetch(int caseId) async {
     emit(state.copyWith(loading: true));
@@ -29,11 +34,14 @@ class CaseMediaCubit extends Cubit<CaseMediaState> {
   Future<void> uploadImages(int caseId, List<XFile> files) async {
     for (final file in files) {
       final String fileName = file.name;
-      final String ext = fileName.contains('.') ? fileName.split('.').last : 'png';
+      final String ext = fileName.contains('.')
+          ? fileName.split('.').last
+          : 'png';
       final String mimeType = _inferMime(ext);
       final int sizeBytes = await file.length();
       final String sizeMb = (sizeBytes / (1024 * 1024)).toStringAsFixed(2);
-      final String tempId = '${DateTime.now().millisecondsSinceEpoch}_$fileName';
+      final String tempId =
+          '${DateTime.now().millisecondsSinceEpoch}_$fileName';
       _setProgress(tempId, 0.0);
       try {
         final presign = await getPresigned(
@@ -49,16 +57,14 @@ class CaseMediaCubit extends Cubit<CaseMediaState> {
         final fileUuid = presign['file_uuid'] as String;
         final serverMime = presign['mime_type'] as String? ?? mimeType;
 
-        await uploadToS3(
-          uploadUrl,
-          await file.readAsBytes(),
-          serverMime,
-          (sent, total) {
-            if (total > 0) {
-              _setProgress(tempId, sent / total);
-            }
-          },
-        );
+        await uploadToS3(uploadUrl, await file.readAsBytes(), serverMime, (
+          sent,
+          total,
+        ) {
+          if (total > 0) {
+            _setProgress(tempId, sent / total);
+          }
+        });
 
         await confirmUpload(
           caseId,
@@ -77,6 +83,23 @@ class CaseMediaCubit extends Cubit<CaseMediaState> {
       }
     }
     await fetch(caseId);
+  }
+
+  Future<void> deleteMediaFile(int caseId, int mediaFileId) async {
+    try {
+      await deleteMedia(caseId, mediaFileId);
+
+      // Update state by removing deleted item
+      final updatedItems = state.items
+          .where((item) => item.mediaFileId != mediaFileId)
+          .toList();
+
+      emit(state.copyWith(items: updatedItems));
+    } catch (e) {
+      emit(state.copyWith(error: e.toString()));
+      // Re-emit current state to clear error after showing
+      emit(state.copyWith(error: null));
+    }
   }
 
   void _setProgress(String id, double p) {
@@ -107,4 +130,3 @@ class CaseMediaCubit extends Cubit<CaseMediaState> {
     }
   }
 }
-

@@ -18,13 +18,13 @@ class GetPresignedUrlUseCase {
     required String fileType,
     required String originalFileName,
   }) => repo.getPresignedUploadUrl(
-        caseId,
-        fileExtension: fileExtension,
-        fileName: fileName,
-        fileSizeMb: fileSizeMb,
-        fileType: fileType,
-        originalFileName: originalFileName,
-      );
+    caseId,
+    fileExtension: fileExtension,
+    fileName: fileName,
+    fileSizeMb: fileSizeMb,
+    fileType: fileType,
+    originalFileName: originalFileName,
+  );
 }
 
 class ConfirmUploadUseCase {
@@ -40,21 +40,33 @@ class ConfirmUploadUseCase {
     required String objectKey,
     required String originalFileName,
   }) => repo.confirmUpload(
-        caseId,
-        fileExtension: fileExtension,
-        fileName: fileName,
-        fileType: fileType,
-        fileUuid: fileUuid,
-        mimeType: mimeType,
-        objectKey: objectKey,
-        originalFileName: originalFileName,
-      );
+    caseId,
+    fileExtension: fileExtension,
+    fileName: fileName,
+    fileType: fileType,
+    fileUuid: fileUuid,
+    mimeType: mimeType,
+    objectKey: objectKey,
+    originalFileName: originalFileName,
+  );
 }
 
 class UploadToS3UseCase {
   final MediaRepository repo;
   UploadToS3UseCase(this.repo);
-  Future<void> call(String url, List<int> bytes, String contentType, void Function(int, int) onProgress) =>
-      repo.uploadToPresignedUrl(url, bytes, contentType, onProgress);
+  Future<void> call(
+    String url,
+    List<int> bytes,
+    String contentType,
+    void Function(int, int) onProgress,
+  ) => repo.uploadToPresignedUrl(url, bytes, contentType, onProgress);
 }
 
+class DeleteMediaFileUseCase {
+  final MediaRepository repo;
+
+  DeleteMediaFileUseCase(this.repo);
+
+  Future<void> call(int caseId, int mediaFileId) =>
+      repo.deleteMediaFile(caseId, mediaFileId);
+}
