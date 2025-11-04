@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
+import '../cubit/case_media_cubit.dart';
 
 import '../../core/di/injection_container.dart' as di;
 import '../../domain/entities/case_entity.dart';
@@ -311,6 +313,16 @@ class CaseDetailPage extends StatelessWidget {
             ),
           ]),
 
+          // Media Library
+          _buildDetailCard('Media Library', [
+            BlocProvider(
+              create: (_) =>
+                  CaseMediaCubit(di.sl(), di.sl(), di.sl(), di.sl())
+                    ..fetch(caseEntity.caseId),
+              child: CaseMediaSection(caseId: caseEntity.caseId),
+            ),
+          ]),
+
           // Completion Information
           if (caseEntity.isCompleted)
             _buildDetailCard('Completion Information', [
@@ -382,6 +394,221 @@ class CaseDetailPage extends StatelessWidget {
           ]),
 
           const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+}
+
+class CaseMediaSection extends StatefulWidget {
+  final int caseId;
+
+  const CaseMediaSection({super.key, required this.caseId});
+
+  @override
+  State<CaseMediaSection> createState() => _CaseMediaSectionState();
+}
+
+class _CaseMediaSectionState extends State<CaseMediaSection> {
+  final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  Future<void> _onUploadPressed() async {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF2D3748),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    Navigator.of(ctx).pop();
+                    final XFile? photo = await _picker.pickImage(
+                      source: ImageSource.camera,
+                      imageQuality: 90,
+                    );
+                    if (photo != null) {
+                      if (!mounted) return;
+                      context.read<CaseMediaCubit>().uploadImages(
+                        widget.caseId,
+                        [photo],
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.photo_camera),
+                  label: const Text('Camera'),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    Navigator.of(ctx).pop();
+                    final List<XFile> files = await _picker.pickMultiImage(
+                      imageQuality: 90,
+                    );
+                    if (files.isNotEmpty) {
+                      if (!mounted) return;
+                      context.read<CaseMediaCubit>().uploadImages(
+                        widget.caseId,
+                        files,
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.photo_library),
+                  label: const Text('Gallery'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // All networking handled by cubit
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Images',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: _onUploadPressed,
+              icon: const Icon(Icons.cloud_upload),
+              label: const Text('Upload'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        BlocBuilder<CaseMediaCubit, CaseMediaState>(
+          builder: (context, mediaState) {
+            if (mediaState.loading) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16.0),
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation(Color(0xFF4299E1)),
+                  ),
+                ),
+              );
+            }
+            if (mediaState.items.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16.0),
+                child: Text(
+                  'No media uploaded yet.',
+                  style: TextStyle(color: Color(0xFFA0AEC0)),
+                ),
+              );
+            }
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+              ),
+              itemCount: mediaState.items.length,
+              itemBuilder: (context, index) {
+                final item = mediaState.items[index];
+                final String? url = item.s3Url;
+                return Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xFF4A5568),
+                      width: 1,
+                    ),
+                    color: const Color(0xFF1A202C),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: url == null
+                      ? const Center(
+                          child: Icon(
+                            Icons.image_not_supported,
+                            color: Color(0xFFA0AEC0),
+                          ),
+                        )
+                      : Image.network(url, fit: BoxFit.cover),
+                );
+              },
+            );
+          },
+        ),
+        BlocBuilder<CaseMediaCubit, CaseMediaState>(
+          builder: (context, mediaState) {
+            if (mediaState.progress.isEmpty) return const SizedBox.shrink();
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16),
+                const Text(
+                  'Uploads',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ...mediaState.progress.entries.map(
+                  (e) => _buildProgressRow(e.key, e.value),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProgressRow(String id, double progress) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        children: [
+          const Icon(Icons.image, color: Color(0xFFA0AEC0), size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 8,
+                backgroundColor: const Color(0xFF2D3748),
+                valueColor: const AlwaysStoppedAnimation(Color(0xFF4299E1)),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 40,
+            child: Text(
+              '${(progress * 100).toStringAsFixed(0)}%',
+              style: const TextStyle(color: Colors.white, fontSize: 12),
+              textAlign: TextAlign.right,
+            ),
+          ),
         ],
       ),
     );

@@ -1,8 +1,14 @@
 import 'package:get_it/get_it.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:pixelator/core/interceptors/dio_interceptors.dart';
 import 'package:pixelator/domain/usecases/get_case_by_id_usecase.dart';
 import 'package:pixelator/presentation/cubit/case_detail_cubit.dart';
+import 'package:pixelator/presentation/cubit/case_media_cubit.dart';
+import 'package:pixelator/domain/usecases/media_usecases.dart';
+import 'package:pixelator/domain/repositories/media_repository.dart';
+import 'package:pixelator/data/repositories/media_repository_impl.dart';
+import 'package:pixelator/data/data_sources/media_remote_data_source.dart';
 import '../../data/data_sources/auth_remote_data_source.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -29,15 +35,21 @@ Future<void> init() async {
   sl.registerFactory(() => AuthCubit(sl()));
   sl.registerFactory(() => CasesCubit(sl()));
   sl.registerFactory(() => CaseDetailCubit(sl()));
+  sl.registerFactory(() => CaseMediaCubit(sl(), sl(), sl(), sl()));
 
   // Use Cases
   sl.registerLazySingleton(() => LoginUseCase(sl()));
   sl.registerLazySingleton(() => GetCurrentUserUseCase(sl()));
   sl.registerLazySingleton(() => GetCasesUseCase(sl()));
   sl.registerLazySingleton(() => GetCaseByIdUseCase(sl()));
+  sl.registerLazySingleton(() => GetCaseMediaUseCase(sl()));
+  sl.registerLazySingleton(() => GetPresignedUrlUseCase(sl()));
+  sl.registerLazySingleton(() => ConfirmUploadUseCase(sl()));
+  sl.registerLazySingleton(() => UploadToS3UseCase(sl()));
 
   // Repositories
   sl.registerLazySingleton<CaseRepository>(() => CaseRepositoryImpl(sl()));
+  sl.registerLazySingleton<MediaRepository>(() => MediaRepositoryImpl(sl()));
 
   // Repositories
   sl.registerLazySingleton<AuthRepository>(
@@ -51,6 +63,9 @@ Future<void> init() async {
 
   sl.registerLazySingleton<CaseRemoteDataSource>(
     () => CaseRemoteDataSourceImpl(sl()),
+  );
+  sl.registerLazySingleton<MediaRemoteDataSource>(
+    () => MediaRemoteDataSourceImpl(sl()),
   );
 
   // Storage
@@ -77,7 +92,10 @@ Future<void> init() async {
   );
 
   // Add auth interceptor
-  dio.interceptors.add(AuthInterceptor(sl<TokenStorage>(), dio));
+  dio.interceptors.addAll([
+    AuthInterceptor(sl<TokenStorage>(), dio),
+    LoggerInterceptor(),
+  ]);
 
   sl.registerLazySingleton<Dio>(() => dio);
 }
