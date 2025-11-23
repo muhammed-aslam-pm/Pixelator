@@ -35,7 +35,7 @@ class CaseEntity extends Equatable {
   final DateTime createdAt;
   final int createdBy;
   final DateTime updatedAt;
-  final int updatedBy;
+  final int? updatedBy;
 
   const CaseEntity({
     required this.caseName,
@@ -72,7 +72,7 @@ class CaseEntity extends Equatable {
     required this.createdAt,
     required this.createdBy,
     required this.updatedAt,
-    required this.updatedBy,
+    this.updatedBy,
   });
 
   String get priorityText {
@@ -94,41 +94,40 @@ class CaseEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        caseName,
-        caseNo,
-        caseDescription,
-        hospitalName,
-        patientId,
-        specialization,
-        site,
-        priority,
-        assignedTo,
-        caseId,
-        caseUuid,
-        userId,
-        orgId,
-        slidesCount,
-        mediaFilesCount,
-        totalFileSizeMb,
-        status,
-        isCompleted,
-        completedAt,
-        completedBy,
-        isFlagged,
-        flagReason,
-        flaggedAt,
-        flaggedBy,
-        hasOpinion,
-        opinion,
-        opinionAddedAt,
-        opinionAddedBy,
-        archivalStatus,
-        archivedAt,
-        archivedBy,
-        createdAt,
-        createdBy,
-        updatedAt,
-        updatedBy,
-      ];
+    caseName,
+    caseNo,
+    caseDescription,
+    hospitalName,
+    patientId,
+    specialization,
+    site,
+    priority,
+    assignedTo,
+    caseId,
+    caseUuid,
+    userId,
+    orgId,
+    slidesCount,
+    mediaFilesCount,
+    totalFileSizeMb,
+    status,
+    isCompleted,
+    completedAt,
+    completedBy,
+    isFlagged,
+    flagReason,
+    flaggedAt,
+    flaggedBy,
+    hasOpinion,
+    opinion,
+    opinionAddedAt,
+    opinionAddedBy,
+    archivalStatus,
+    archivedAt,
+    archivedBy,
+    createdAt,
+    createdBy,
+    updatedAt,
+    updatedBy,
+  ];
 }
-

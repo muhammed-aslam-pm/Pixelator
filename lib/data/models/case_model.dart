@@ -7,101 +7,101 @@ part 'case_model.g.dart';
 class CaseModel extends CaseEntity {
   @JsonKey(name: 'case_name')
   final String caseName;
-  
+
   @JsonKey(name: 'case_no')
   final String caseNo;
-  
+
   @JsonKey(name: 'case_description')
   final String caseDescription;
-  
+
   @JsonKey(name: 'hospital_name')
   final String hospitalName;
-  
+
   @JsonKey(name: 'patient_id')
   final String patientId;
-  
+
   final String specialization;
   final String site;
   final int priority;
-  
+
   @JsonKey(name: 'assigned_to')
   final int assignedTo;
-  
+
   @JsonKey(name: 'case_id')
   final int caseId;
-  
+
   @JsonKey(name: 'case_uuid')
   final String caseUuid;
-  
+
   @JsonKey(name: 'user_id')
   final int userId;
-  
+
   @JsonKey(name: 'org_id')
   final int orgId;
-  
+
   @JsonKey(name: 'slides_count')
   final int slidesCount;
-  
+
   @JsonKey(name: 'media_files_count')
   final int mediaFilesCount;
-  
+
   @JsonKey(name: 'total_file_size_mb')
   final String totalFileSizeMb;
-  
+
   final String status;
-  
+
   @JsonKey(name: 'is_completed')
   final bool isCompleted;
-  
+
   @JsonKey(name: 'completed_at')
   final DateTime? completedAt;
-  
+
   @JsonKey(name: 'completed_by')
   final int? completedBy;
-  
+
   @JsonKey(name: 'is_flagged')
   final bool isFlagged;
-  
+
   @JsonKey(name: 'flag_reason')
   final String? flagReason;
-  
+
   @JsonKey(name: 'flagged_at')
   final DateTime? flaggedAt;
-  
+
   @JsonKey(name: 'flagged_by')
   final int? flaggedBy;
-  
+
   @JsonKey(name: 'has_opinion')
   final bool hasOpinion;
-  
+
   final String? opinion;
-  
+
   @JsonKey(name: 'opinion_added_at')
   final DateTime? opinionAddedAt;
-  
+
   @JsonKey(name: 'opinion_added_by')
   final int? opinionAddedBy;
-  
+
   @JsonKey(name: 'archival_status')
   final bool archivalStatus;
-  
+
   @JsonKey(name: 'archived_at')
   final DateTime? archivedAt;
-  
+
   @JsonKey(name: 'archived_by')
   final int? archivedBy;
-  
+
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
-  
+
   @JsonKey(name: 'created_by')
   final int createdBy;
-  
+
   @JsonKey(name: 'updated_at')
   final DateTime updatedAt;
-  
+
   @JsonKey(name: 'updated_by')
-  final int updatedBy;
+  final int? updatedBy;
 
   const CaseModel({
     required this.caseName,
@@ -138,44 +138,44 @@ class CaseModel extends CaseEntity {
     required this.createdAt,
     required this.createdBy,
     required this.updatedAt,
-    required this.updatedBy,
+    this.updatedBy,
   }) : super(
-          caseName: caseName,
-          caseNo: caseNo,
-          caseDescription: caseDescription,
-          hospitalName: hospitalName,
-          patientId: patientId,
-          specialization: specialization,
-          site: site,
-          priority: priority,
-          assignedTo: assignedTo,
-          caseId: caseId,
-          caseUuid: caseUuid,
-          userId: userId,
-          orgId: orgId,
-          slidesCount: slidesCount,
-          mediaFilesCount: mediaFilesCount,
-          totalFileSizeMb: totalFileSizeMb,
-          status: status,
-          isCompleted: isCompleted,
-          completedAt: completedAt,
-          completedBy: completedBy,
-          isFlagged: isFlagged,
-          flagReason: flagReason,
-          flaggedAt: flaggedAt,
-          flaggedBy: flaggedBy,
-          hasOpinion: hasOpinion,
-          opinion: opinion,
-          opinionAddedAt: opinionAddedAt,
-          opinionAddedBy: opinionAddedBy,
-          archivalStatus: archivalStatus,
-          archivedAt: archivedAt,
-          archivedBy: archivedBy,
-          createdAt: createdAt,
-          createdBy: createdBy,
-          updatedAt: updatedAt,
-          updatedBy: updatedBy,
-        );
+         caseName: caseName,
+         caseNo: caseNo,
+         caseDescription: caseDescription,
+         hospitalName: hospitalName,
+         patientId: patientId,
+         specialization: specialization,
+         site: site,
+         priority: priority,
+         assignedTo: assignedTo,
+         caseId: caseId,
+         caseUuid: caseUuid,
+         userId: userId,
+         orgId: orgId,
+         slidesCount: slidesCount,
+         mediaFilesCount: mediaFilesCount,
+         totalFileSizeMb: totalFileSizeMb,
+         status: status,
+         isCompleted: isCompleted,
+         completedAt: completedAt,
+         completedBy: completedBy,
+         isFlagged: isFlagged,
+         flagReason: flagReason,
+         flaggedAt: flaggedAt,
+         flaggedBy: flaggedBy,
+         hasOpinion: hasOpinion,
+         opinion: opinion,
+         opinionAddedAt: opinionAddedAt,
+         opinionAddedBy: opinionAddedBy,
+         archivalStatus: archivalStatus,
+         archivedAt: archivedAt,
+         archivedBy: archivedBy,
+         createdAt: createdAt,
+         createdBy: createdBy,
+         updatedAt: updatedAt,
+         updatedBy: updatedBy,
+       );
 
   factory CaseModel.fromJson(Map<String, dynamic> json) =>
       _$CaseModelFromJson(json);
@@ -222,4 +222,3 @@ class CaseModel extends CaseEntity {
     );
   }
 }
-

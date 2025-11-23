@@ -49,7 +49,7 @@ CaseModel _$CaseModelFromJson(Map<String, dynamic> json) => CaseModel(
   createdAt: DateTime.parse(json['created_at'] as String),
   createdBy: (json['created_by'] as num).toInt(),
   updatedAt: DateTime.parse(json['updated_at'] as String),
-  updatedBy: (json['updated_by'] as num).toInt(),
+  updatedBy: (json['updated_by'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$CaseModelToJson(CaseModel instance) => <String, dynamic>{
