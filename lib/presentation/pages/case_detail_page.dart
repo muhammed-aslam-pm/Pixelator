@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import '../cubit/case_media_cubit.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:pixelator/presentation/pages/slide_capture_page.dart';
 
 import '../../core/di/injection_container.dart' as di;
 import '../../domain/entities/case_entity.dart';
@@ -115,70 +117,51 @@ class CaseDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => CaseDetailCubit(di.sl())..getCaseById(caseId),
-      child: Scaffold(
-        backgroundColor: const Color(0xFF1A202C),
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF2D3748),
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          title: const Text(
-            'Case Details',
-            style: TextStyle(
-              color: Color(0xFF4299E1),
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+      child: BlocBuilder<CaseDetailCubit, CaseDetailState>(
+        builder: (context, state) {
+          return Scaffold(
+            backgroundColor: const Color(0xFF1A202C),
+            appBar: AppBar(
+              backgroundColor: const Color(0xFF2D3748),
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              title: const Text(
+                'Case Details',
+                style: TextStyle(
+                  color: Color(0xFF4299E1),
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
-          ),
-        ),
-        body: BlocBuilder<CaseDetailCubit, CaseDetailState>(
-          builder: (context, state) {
-            if (state is CaseDetailLoading) {
-              return const Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation(Color(0xFF4299E1)),
-                ),
-              );
-            } else if (state is CaseDetailError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: Colors.red,
-                      size: 64,
+            body: state is CaseDetailLoading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
-                    const SizedBox(height: 16),
-                    Text(
+                  )
+                : state is CaseDetailLoaded
+                ? _buildDetailView(state.caseEntity)
+                : state is CaseDetailError
+                ? Center(
+                    child: Text(
                       state.message,
-                      style: const TextStyle(color: Colors.white, fontSize: 16),
-                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.red,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        context.read<CaseDetailCubit>().getCaseById(caseId);
-                      },
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              );
-            } else if (state is CaseDetailLoaded) {
-              return _buildDetailView(state.caseEntity);
-            } else {
-              return const Center(
-                child: Text(
-                  'No data available',
-                  style: TextStyle(color: Colors.white),
-                ),
-              );
-            }
-          },
-        ),
+                  )
+                : const SizedBox.shrink(),
+            floatingActionButton: state is CaseDetailLoaded
+                ? _buildFloatingActionButton(context, state.caseEntity)
+                : null,
+          );
+        },
       ),
     );
   }
@@ -396,6 +379,42 @@ class CaseDetailPage extends StatelessWidget {
           const SizedBox(height: 24),
         ],
       ),
+    );
+  }
+
+  Widget _buildFloatingActionButton(
+    BuildContext context,
+    CaseEntity caseEntity,
+  ) {
+    return FloatingActionButton.extended(
+      onPressed: () async {
+        // Request camera permission first
+        final permission = await Permission.camera.request();
+
+        if (permission.isGranted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SlideCapturePage(
+                args: SlideCapturePageArgs(
+                  caseId: caseEntity.caseId,
+                  caseNo: caseEntity.caseNo,
+                ),
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Camera permission is required'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      },
+      icon: const Icon(Icons.camera_alt),
+      label: const Text('Capture Slide'),
+      backgroundColor: const Color(0xFF4299E1),
     );
   }
 }

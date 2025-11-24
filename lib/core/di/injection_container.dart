@@ -2,6 +2,8 @@ import 'package:get_it/get_it.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pixelator/core/interceptors/dio_interceptors.dart';
+import 'package:pixelator/domain/services/alignment_calculator.dart';
+import 'package:pixelator/domain/services/perspective_corrector.dart';
 import 'package:pixelator/domain/usecases/get_case_by_id_usecase.dart';
 import 'package:pixelator/presentation/cubit/case_detail_cubit.dart';
 import 'package:pixelator/presentation/cubit/case_media_cubit.dart';
@@ -99,4 +101,8 @@ Future<void> init() async {
   ]);
 
   sl.registerLazySingleton<Dio>(() => dio);
+
+  sl.registerLazySingleton<AlignmentCalculator>(() => AlignmentCalculator());
+
+  sl.registerLazySingleton<PerspectiveCorrector>(() => PerspectiveCorrector());
 }
