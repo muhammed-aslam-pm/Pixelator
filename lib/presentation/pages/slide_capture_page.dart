@@ -176,7 +176,7 @@ class _SlideCaptureView extends StatelessWidget {
         _buildGridOverlay(),
 
         // Target Rectangle (Portrait in landscape mode)
-        _buildTargetRectangle(alignmentData?.status),
+        buildTargetRectangle(alignmentData?.status),
 
         // Alignment Indicator (Top Center)
         if (alignmentData != null) _buildAlignmentIndicator(alignmentData),
@@ -200,7 +200,7 @@ class _SlideCaptureView extends StatelessWidget {
     return Positioned.fill(child: CustomPaint(painter: GridPainter()));
   }
 
-  Widget _buildTargetRectangle(AlignmentStatus? status) {
+  Widget buildTargetRectangle([AlignmentStatus? status]) {
     Color borderColor = Colors.white.withOpacity(0.5);
     if (status != null) {
       switch (status) {
@@ -215,25 +215,23 @@ class _SlideCaptureView extends StatelessWidget {
           break;
       }
     }
-
-    // Portrait rectangle for landscape orientation (taller than wide)
+    // Use 10:1 aspect ratio (e.g., width:600, height:60). Centered in preview
     return Center(
       child: Container(
-        width: 340, // Narrower
-        height: 200, // Taller - portrait aspect ratio
+        width:
+            550, // You may want to use e.g. MediaQuery.of(context).size.width * 0.85
+        height:
+            200, // You may want to use e.g. MediaQuery.of(context).size.width * 0.085
         decoration: BoxDecoration(
           border: Border.all(color: borderColor, width: 3),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Stack(
           children: [
-            // Corner indicators
             _buildCornerIndicator(Alignment.topLeft, borderColor),
             _buildCornerIndicator(Alignment.topRight, borderColor),
             _buildCornerIndicator(Alignment.bottomLeft, borderColor),
             _buildCornerIndicator(Alignment.bottomRight, borderColor),
-
-            // Center crosshair
             Center(
               child: Icon(
                 Icons.center_focus_weak,
