@@ -1,12 +1,15 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:camera/camera.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../domain/entities/slide_capture_entity.dart';
 import '../../domain/services/alignment_calculator.dart';
 import '../../domain/services/perspective_corrector.dart';
 import '../cubit/slide_capture_cubit.dart';
+import '../cubit/case_media_cubit.dart';
 
 class SlideCapturePageArgs {
   final int caseId;
@@ -15,10 +18,37 @@ class SlideCapturePageArgs {
   const SlideCapturePageArgs({required this.caseId, required this.caseNo});
 }
 
-class SlideCapturePage extends StatelessWidget {
+class SlideCapturePage extends StatefulWidget {
   final SlideCapturePageArgs args;
 
   const SlideCapturePage({super.key, required this.args});
+
+  @override
+  State<SlideCapturePage> createState() => _SlideCapturePageState();
+}
+
+class _SlideCapturePageState extends State<SlideCapturePage> {
+  @override
+  void initState() {
+    super.initState();
+    // Lock orientation to landscape
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  }
+
+  @override
+  void dispose() {
+    // Restore all orientations
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +56,7 @@ class SlideCapturePage extends StatelessWidget {
       create: (_) =>
           SlideCaptureCubit(AlignmentCalculator(), PerspectiveCorrector())
             ..initializeCamera(),
-      child: _SlideCaptureView(args: args),
+      child: _SlideCaptureView(args: widget.args),
     );
   }
 }
@@ -63,9 +93,10 @@ class _SlideCaptureView extends StatelessWidget {
             return _buildLoadingView();
           } else if (state is SlideCameraReady ||
               state is SlideAligning ||
-              state is SlideCaptureProcessing ||
-              state is SlideCaptureCaptured) {
+              state is SlideCaptureProcessing) {
             return _buildCameraView(context, state);
+          } else if (state is SlideCaptureCaptured) {
+            return _buildPreviewView(context, state.capturedSlide);
           } else {
             return _buildErrorView(context);
           }
@@ -120,7 +151,6 @@ class _SlideCaptureView extends StatelessWidget {
   Widget _buildCameraView(BuildContext context, SlideCaptureState state) {
     CameraController? controller;
     SlideAlignmentData? alignmentData;
-    CapturedSlide? capturedSlide;
 
     if (state is SlideCameraReady) {
       controller = state.cameraController;
@@ -129,14 +159,13 @@ class _SlideCaptureView extends StatelessWidget {
       alignmentData = state.alignmentData;
     } else if (state is SlideCaptureProcessing) {
       controller = state.cameraController;
-    } else if (state is SlideCaptureCaptured) {
-      controller = state.cameraController;
-      capturedSlide = state.capturedSlide;
     }
 
     if (controller == null || !controller.value.isInitialized) {
       return _buildLoadingView();
     }
+
+    final isProcessing = state is SlideCaptureProcessing;
 
     return Stack(
       children: [
@@ -144,30 +173,25 @@ class _SlideCaptureView extends StatelessWidget {
         Positioned.fill(child: CameraPreview(controller)),
 
         // Grid Overlay
-        if (capturedSlide == null) _buildGridOverlay(),
+        _buildGridOverlay(),
 
-        // Target Rectangle
-        if (capturedSlide == null) _buildTargetRectangle(alignmentData?.status),
+        // Target Rectangle (Portrait in landscape mode)
+        _buildTargetRectangle(alignmentData?.status),
 
-        // Alignment Indicator
-        if (alignmentData != null && capturedSlide == null)
-          _buildAlignmentIndicator(alignmentData),
+        // Alignment Indicator (Top Center)
+        if (alignmentData != null) _buildAlignmentIndicator(alignmentData),
 
-        // Feedback Message
-        if (alignmentData != null && capturedSlide == null)
-          _buildFeedbackMessage(alignmentData),
+        // Feedback Message (Bottom)
+        if (alignmentData != null) _buildFeedbackMessage(alignmentData),
 
         // Processing Overlay
-        if (state is SlideCaptureProcessing) _buildProcessingOverlay(),
-
-        // Captured Preview
-        if (capturedSlide != null) _buildCapturedPreview(capturedSlide),
+        if (isProcessing) _buildProcessingOverlay(),
 
         // Top Bar
         _buildTopBar(context),
 
-        // Bottom Controls
-        if (capturedSlide == null) _buildBottomControls(context, state),
+        // Right Side Controls
+        _buildRightControls(context, isProcessing),
       ],
     );
   }
@@ -192,12 +216,11 @@ class _SlideCaptureView extends StatelessWidget {
       }
     }
 
-    // Landscape rectangle for microscope slides (wider than tall)
-    // In portrait mode, this will be horizontally oriented
+    // Portrait rectangle for landscape orientation (taller than wide)
     return Center(
       child: Container(
-        width: 320, // Wider
-        height: 180, // Shorter - landscape aspect ratio
+        width: 340, // Narrower
+        height: 200, // Taller - portrait aspect ratio
         decoration: BoxDecoration(
           border: Border.all(color: borderColor, width: 3),
           borderRadius: BorderRadius.circular(8),
@@ -255,17 +278,17 @@ class _SlideCaptureView extends StatelessWidget {
     }
 
     return Positioned(
-      top: 100,
+      top: 16,
       left: 0,
       right: 0,
       child: Center(
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Colors.black.withOpacity(0.7),
             borderRadius: BorderRadius.circular(50),
           ),
-          child: Icon(icon, color: indicatorColor, size: 40),
+          child: Icon(icon, color: indicatorColor, size: 32),
         ),
       ),
     );
@@ -273,15 +296,15 @@ class _SlideCaptureView extends StatelessWidget {
 
   Widget _buildFeedbackMessage(SlideAlignmentData alignmentData) {
     return Positioned(
-      bottom: 120,
+      bottom: 16,
       left: 0,
       right: 0,
       child: Center(
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           decoration: BoxDecoration(
             color: Colors.black.withOpacity(0.8),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(20),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -290,15 +313,15 @@ class _SlideCaptureView extends StatelessWidget {
                 alignmentData.feedbackMessage,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               Text(
                 'Tilt: ${alignmentData.totalTilt.toStringAsFixed(1)}° | Stable: ${alignmentData.isStable ? "Yes" : "No"}',
-                style: const TextStyle(color: Color(0xFFA0AEC0), fontSize: 12),
+                style: const TextStyle(color: Color(0xFFA0AEC0), fontSize: 11),
               ),
             ],
           ),
@@ -328,42 +351,6 @@ class _SlideCaptureView extends StatelessWidget {
     );
   }
 
-  Widget _buildCapturedPreview(CapturedSlide capturedSlide) {
-    return Positioned.fill(
-      child: Container(
-        color: Colors.black.withOpacity(0.9),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              constraints: const BoxConstraints(maxHeight: 400),
-              child: Image.file(
-                File(capturedSlide.filePath),
-                fit: BoxFit.contain,
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Icon(Icons.check_circle, color: Color(0xFF34D399), size: 64),
-            const SizedBox(height: 16),
-            const Text(
-              'Slide Captured Successfully!',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Tilt: ${capturedSlide.tiltAtCapture.toStringAsFixed(1)}°',
-              style: const TextStyle(color: Color(0xFFA0AEC0), fontSize: 14),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildTopBar(BuildContext context) {
     return Positioned(
       top: 0,
@@ -371,7 +358,7 @@ class _SlideCaptureView extends StatelessWidget {
       right: 0,
       child: SafeArea(
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
@@ -382,33 +369,34 @@ class _SlideCaptureView extends StatelessWidget {
           child: Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                icon: const Icon(Icons.close, color: Colors.white),
                 onPressed: () => Navigator.of(context).pop(),
               ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Capture Biopsy Slide',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Capture Biopsy Slide',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
-                    Text(
-                      'Case: ${args.caseNo}',
-                      style: const TextStyle(
-                        color: Color(0xFFA0AEC0),
-                        fontSize: 12,
-                      ),
+                  ),
+                  Text(
+                    'Case: ${args.caseNo}',
+                    style: const TextStyle(
+                      color: Color(0xFFA0AEC0),
+                      fontSize: 11,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+              const Spacer(),
               IconButton(
-                icon: const Icon(Icons.info_outline, color: Colors.white),
+                icon: const Icon(Icons.help_outline, color: Colors.white),
                 onPressed: () => _showInstructions(context),
               ),
             ],
@@ -418,74 +406,21 @@ class _SlideCaptureView extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomControls(BuildContext context, SlideCaptureState state) {
-    final isProcessing = state is SlideCaptureProcessing;
-    final cubit = context.read<SlideCaptureCubit>();
-
+  Widget _buildRightControls(BuildContext context, bool isProcessing) {
     return Positioned(
-      bottom: 0,
-      left: 0,
       right: 0,
+      top: 0,
+      bottom: 0,
       child: SafeArea(
         child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.bottomCenter,
-              end: Alignment.topCenter,
-              colors: [Colors.black.withOpacity(0.7), Colors.transparent],
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildControlButton(
-                icon: Icons.flip_camera_android,
-                label: 'Flip',
-                onPressed: isProcessing
-                    ? null
-                    : () {
-                        cubit.switchCamera();
-                      },
-              ),
-              _buildCaptureButton(context, isProcessing),
-              _buildControlButton(
-                icon: Icons.flash_auto,
-                label: 'Flash',
-                onPressed: isProcessing
-                    ? null
-                    : () {
-                        // Flash toggle will be implemented if needed
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Flash control coming soon'),
-                            duration: Duration(seconds: 1),
-                          ),
-                        );
-                      },
-              ),
-            ],
+          width: 80,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [_buildCaptureButton(context, isProcessing)],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildControlButton({
-    required IconData icon,
-    required String label,
-    VoidCallback? onPressed,
-  }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton(
-          icon: Icon(icon, color: Colors.white),
-          iconSize: 28,
-          onPressed: onPressed,
-        ),
-        Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
-      ],
     );
   }
 
@@ -497,8 +432,8 @@ class _SlideCaptureView extends StatelessWidget {
               context.read<SlideCaptureCubit>().captureImage();
             },
       child: Container(
-        width: 70,
-        height: 70,
+        width: 64,
+        height: 64,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(color: Colors.white, width: 4),
@@ -508,15 +443,272 @@ class _SlideCaptureView extends StatelessWidget {
         ),
         child: isProcessing
             ? const Padding(
-                padding: EdgeInsets.all(16),
+                padding: EdgeInsets.all(14),
                 child: CircularProgressIndicator(
                   color: Colors.white,
                   strokeWidth: 3,
                 ),
               )
-            : const Icon(Icons.camera, color: Colors.white, size: 32),
+            : const Icon(Icons.camera, color: Colors.white, size: 28),
       ),
     );
+  }
+
+  Widget _buildPreviewView(BuildContext context, CapturedSlide capturedSlide) {
+    return Container(
+      color: Colors.black,
+      child: Stack(
+        children: [
+          // Image Preview
+          Center(
+            child: Image.file(
+              File(capturedSlide.filePath),
+              fit: BoxFit.contain,
+            ),
+          ),
+
+          // Top Bar
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.black.withOpacity(0.7), Colors.transparent],
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.check_circle,
+                      color: Color(0xFF34D399),
+                      size: 24,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Preview',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      'Case: ${args.caseNo}',
+                      style: const TextStyle(
+                        color: Color(0xFFA0AEC0),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Bottom Action Buttons
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [Colors.black.withOpacity(0.8), Colors.transparent],
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    // Retake Button
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            context.read<SlideCaptureCubit>().retryCapture();
+                          },
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Retake'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2D3748),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Continue Button
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            _uploadImage(context, capturedSlide.filePath);
+                          },
+                          icon: const Icon(Icons.cloud_upload),
+                          label: const Text('Continue'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4299E1),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Image Info Overlay
+          Positioned(
+            top: 80,
+            left: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.straighten,
+                        color: Color(0xFF4299E1),
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Tilt: ${capturedSlide.tiltAtCapture.toStringAsFixed(1)}°',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.crop,
+                        color: Color(0xFF4299E1),
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        capturedSlide.isPerspectiveCorrected
+                            ? 'Corrected'
+                            : 'Original',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _uploadImage(BuildContext context, String filePath) async {
+    // Show uploading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => WillPopScope(
+        onWillPop: () async => false,
+        child: const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(color: Color(0xFF4299E1)),
+                  SizedBox(height: 16),
+                  Text('Uploading image...'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    try {
+      // Convert File to XFile for upload
+      final xFile = XFile(filePath);
+
+      // Try to get CaseMediaCubit from context
+      final mediaCubit = context.read<CaseMediaCubit>();
+
+      // Upload using existing media cubit
+      await mediaCubit.uploadImages(args.caseId, [xFile]);
+
+      // Close uploading dialog
+      if (context.mounted) {
+        Navigator.of(context).pop();
+
+        // Close capture screen and return to case detail
+        Navigator.of(context).pop();
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Slide uploaded successfully!'),
+            backgroundColor: Color(0xFF34D399),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      // Close uploading dialog
+      if (context.mounted) {
+        Navigator.of(context).pop();
+
+        // Show error
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Upload failed: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   void _showInstructions(BuildContext context) {
@@ -534,27 +726,32 @@ class _SlideCaptureView extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                '1. Position the slide within the target rectangle',
+                '1. Hold phone horizontally (landscape)',
                 style: TextStyle(color: Colors.white),
               ),
               SizedBox(height: 8),
               Text(
-                '2. Hold device parallel to the slide',
+                '2. Position the slide within the target rectangle',
                 style: TextStyle(color: Colors.white),
               ),
               SizedBox(height: 8),
               Text(
-                '3. Wait for alignment indicator to turn green',
+                '3. Hold device parallel to the slide',
                 style: TextStyle(color: Colors.white),
               ),
               SizedBox(height: 8),
               Text(
-                '4. Keep steady - auto-capture will trigger',
+                '4. Wait for green indicator (aligned)',
                 style: TextStyle(color: Colors.white),
               ),
               SizedBox(height: 8),
               Text(
-                '5. Or tap the capture button manually',
+                '5. Auto-capture or tap button',
+                style: TextStyle(color: Colors.white),
+              ),
+              SizedBox(height: 8),
+              Text(
+                '6. Review and Continue to upload',
                 style: TextStyle(color: Colors.white),
               ),
             ],

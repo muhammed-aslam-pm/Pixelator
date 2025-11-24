@@ -2,17 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
-import '../cubit/case_media_cubit.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:pixelator/presentation/pages/slide_capture_page.dart';
-
 import '../../core/di/injection_container.dart' as di;
+import '../../core/di/injection_container.dart';
 import '../../domain/entities/case_entity.dart';
 import '../cubit/case_detail_cubit.dart';
+import '../cubit/case_media_cubit.dart';
+
+// --- MAIN PAGE ---
 
 class CaseDetailPage extends StatelessWidget {
   final int caseId;
-
   const CaseDetailPage({super.key, required this.caseId});
 
   String _formatDateTime(DateTime? dateTime) {
@@ -119,50 +120,57 @@ class CaseDetailPage extends StatelessWidget {
       create: (_) => CaseDetailCubit(di.sl())..getCaseById(caseId),
       child: BlocBuilder<CaseDetailCubit, CaseDetailState>(
         builder: (context, state) {
-          return Scaffold(
-            backgroundColor: const Color(0xFF1A202C),
-            appBar: AppBar(
-              backgroundColor: const Color(0xFF2D3748),
-              elevation: 0,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => Navigator.of(context).pop(),
+          if (state is CaseDetailLoaded) {
+            context.read<CaseMediaCubit>().fetch(state.caseEntity.caseId);
+          }
+          return _buildScaffold(context, state);
+        },
+      ),
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context, CaseDetailState state) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF1A202C),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF2D3748),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text(
+          'Case Details',
+          style: TextStyle(
+            color: Color(0xFF4299E1),
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      body: state is CaseDetailLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation(Colors.white),
               ),
-              title: const Text(
-                'Case Details',
-                style: TextStyle(
-                  color: Color(0xFF4299E1),
-                  fontSize: 20,
+            )
+          : state is CaseDetailLoaded
+          ? _buildDetailView(state.caseEntity)
+          : state is CaseDetailError
+          ? Center(
+              child: Text(
+                state.message,
+                style: const TextStyle(
+                  color: Colors.red,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-            body: state is CaseDetailLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : state is CaseDetailLoaded
-                ? _buildDetailView(state.caseEntity)
-                : state is CaseDetailError
-                ? Center(
-                    child: Text(
-                      state.message,
-                      style: const TextStyle(
-                        color: Colors.red,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  )
-                : const SizedBox.shrink(),
-            floatingActionButton: state is CaseDetailLoaded
-                ? _buildFloatingActionButton(context, state.caseEntity)
-                : null,
-          );
-        },
-      ),
+            )
+          : const SizedBox.shrink(),
+      floatingActionButton: state is CaseDetailLoaded
+          ? _buildFloatingActionButton(context, state.caseEntity)
+          : null,
     );
   }
 
@@ -256,8 +264,7 @@ class CaseDetailPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-
-          // Case Information
+          // Case Info
           _buildDetailCard('Case Information', [
             _buildDetailRow('Case ID', caseEntity.caseId.toString()),
             _buildDetailRow('Case UUID', caseEntity.caseUuid),
@@ -268,21 +275,18 @@ class CaseDetailPage extends StatelessWidget {
                   : caseEntity.caseDescription,
             ),
           ]),
-
-          // Patient Information
+          // Patient Info
           _buildDetailCard('Patient Information', [
             _buildDetailRow('Patient ID', caseEntity.patientId),
             _buildDetailRow('Hospital', caseEntity.hospitalName),
             _buildDetailRow('Site', caseEntity.site),
           ]),
-
-          // Medical Information
+          // Medical Info
           _buildDetailCard('Medical Information', [
             _buildDetailRow('Specialization', caseEntity.specialization),
             _buildDetailRow('Priority', _getPriorityText(caseEntity.priority)),
             _buildDetailRow('Status', caseEntity.status),
           ]),
-
           // Files & Media
           _buildDetailCard('Files & Media', [
             _buildDetailRow('Slides Count', caseEntity.slidesCount.toString()),
@@ -295,18 +299,11 @@ class CaseDetailPage extends StatelessWidget {
               '${caseEntity.totalFileSizeMb} MB',
             ),
           ]),
-
-          // Media Library
+          // Media Library -- FIXED: no BlocProvider, use CaseMediaSection directly!
           _buildDetailCard('Media Library', [
-            BlocProvider(
-              create: (_) =>
-                  CaseMediaCubit(di.sl(), di.sl(), di.sl(), di.sl(), di.sl())
-                    ..fetch(caseEntity.caseId),
-              child: CaseMediaSection(caseId: caseEntity.caseId),
-            ),
+            CaseMediaSection(caseId: caseEntity.caseId),
           ]),
-
-          // Completion Information
+          // Completion Info
           if (caseEntity.isCompleted)
             _buildDetailCard('Completion Information', [
               _buildDetailRow(
@@ -318,8 +315,7 @@ class CaseDetailPage extends StatelessWidget {
                 caseEntity.completedBy?.toString() ?? 'N/A',
               ),
             ]),
-
-          // Flag Information
+          // Flag Info
           if (caseEntity.isFlagged)
             _buildDetailCard('Flag Information', [
               _buildDetailRow('Flag Reason', caseEntity.flagReason ?? 'N/A'),
@@ -332,8 +328,7 @@ class CaseDetailPage extends StatelessWidget {
                 caseEntity.flaggedBy?.toString() ?? 'N/A',
               ),
             ]),
-
-          // Opinion Information
+          // Opinion Info
           if (caseEntity.hasOpinion)
             _buildDetailCard('Opinion Information', [
               _buildDetailRow('Opinion', caseEntity.opinion ?? 'N/A'),
@@ -346,8 +341,7 @@ class CaseDetailPage extends StatelessWidget {
                 caseEntity.opinionAddedBy?.toString() ?? 'N/A',
               ),
             ]),
-
-          // Archival Information
+          // Archival Info
           if (caseEntity.archivalStatus)
             _buildDetailCard('Archival Information', [
               _buildDetailRow(
@@ -359,7 +353,6 @@ class CaseDetailPage extends StatelessWidget {
                 caseEntity.archivedBy?.toString() ?? 'N/A',
               ),
             ]),
-
           // Metadata
           _buildDetailCard('Metadata', [
             _buildDetailRow(
@@ -375,7 +368,6 @@ class CaseDetailPage extends StatelessWidget {
             _buildDetailRow('Organization ID', caseEntity.orgId.toString()),
             _buildDetailRow('User ID', caseEntity.userId.toString()),
           ]),
-
           const SizedBox(height: 24),
         ],
       ),
@@ -388,17 +380,19 @@ class CaseDetailPage extends StatelessWidget {
   ) {
     return FloatingActionButton.extended(
       onPressed: () async {
-        // Request camera permission first
         final permission = await Permission.camera.request();
-
         if (permission.isGranted) {
+          final mediaCubit = context.read<CaseMediaCubit>();
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => SlideCapturePage(
-                args: SlideCapturePageArgs(
-                  caseId: caseEntity.caseId,
-                  caseNo: caseEntity.caseNo,
+              builder: (newContext) => BlocProvider.value(
+                value: mediaCubit,
+                child: SlideCapturePage(
+                  args: SlideCapturePageArgs(
+                    caseId: caseEntity.caseId,
+                    caseNo: caseEntity.caseNo,
+                  ),
                 ),
               ),
             ),
@@ -419,9 +413,10 @@ class CaseDetailPage extends StatelessWidget {
   }
 }
 
+// ---- MEDIA SECTION ---
+
 class CaseMediaSection extends StatefulWidget {
   final int caseId;
-
   const CaseMediaSection({super.key, required this.caseId});
 
   @override
@@ -430,11 +425,6 @@ class CaseMediaSection extends StatefulWidget {
 
 class _CaseMediaSectionState extends State<CaseMediaSection> {
   final ImagePicker _picker = ImagePicker();
-
-  @override
-  void initState() {
-    super.initState();
-  }
 
   Future<void> _onUploadPressed() async {
     showModalBottomSheet(
@@ -493,7 +483,75 @@ class _CaseMediaSectionState extends State<CaseMediaSection> {
     );
   }
 
-  // All networking handled by cubit
+  void _showDeleteConfirmation(
+    BuildContext context,
+    int caseId,
+    int mediaFileId,
+  ) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF2D3748),
+        title: const Text(
+          'Delete Media',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'Are you sure you want to delete this media file?',
+          style: TextStyle(color: Color(0xFFA0AEC0)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              context.read<CaseMediaCubit>().deleteMediaFile(
+                caseId,
+                mediaFileId,
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressRow(String id, double progress) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        children: [
+          const Icon(Icons.image, color: Color(0xFFA0AEC0), size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 8,
+                backgroundColor: const Color(0xFF2D3748),
+                valueColor: const AlwaysStoppedAnimation(Color(0xFF4299E1)),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 40,
+            child: Text(
+              '${(progress * 100).toStringAsFixed(0)}%',
+              style: const TextStyle(color: Colors.white, fontSize: 12),
+              textAlign: TextAlign.right,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -531,7 +589,6 @@ class _CaseMediaSectionState extends State<CaseMediaSection> {
                 ),
               );
             }
-
             if (mediaState.items.isEmpty) {
               return const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16.0),
@@ -541,7 +598,6 @@ class _CaseMediaSectionState extends State<CaseMediaSection> {
                 ),
               );
             }
-
             return GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -554,7 +610,6 @@ class _CaseMediaSectionState extends State<CaseMediaSection> {
               itemBuilder: (context, index) {
                 final item = mediaState.items[index];
                 final String? url = item.s3Url;
-
                 return Stack(
                   children: [
                     Container(
@@ -576,7 +631,6 @@ class _CaseMediaSectionState extends State<CaseMediaSection> {
                             )
                           : Image.network(url, fit: BoxFit.cover),
                     ),
-                    // Delete button overlay
                     Positioned(
                       top: 4,
                       right: 4,
@@ -629,76 +683,6 @@ class _CaseMediaSectionState extends State<CaseMediaSection> {
           },
         ),
       ],
-    );
-  }
-
-  Widget _buildProgressRow(String id, double progress) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Row(
-        children: [
-          const Icon(Icons.image, color: Color(0xFFA0AEC0), size: 18),
-          const SizedBox(width: 8),
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 8,
-                backgroundColor: const Color(0xFF2D3748),
-                valueColor: const AlwaysStoppedAnimation(Color(0xFF4299E1)),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 40,
-            child: Text(
-              '${(progress * 100).toStringAsFixed(0)}%',
-              style: const TextStyle(color: Colors.white, fontSize: 12),
-              textAlign: TextAlign.right,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showDeleteConfirmation(
-    BuildContext context,
-    int caseId,
-    int mediaFileId,
-  ) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF2D3748),
-        title: const Text(
-          'Delete Media',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: const Text(
-          'Are you sure you want to delete this media file?',
-          style: TextStyle(color: Color(0xFFA0AEC0)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              context.read<CaseMediaCubit>().deleteMediaFile(
-                caseId,
-                mediaFileId,
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
     );
   }
 }

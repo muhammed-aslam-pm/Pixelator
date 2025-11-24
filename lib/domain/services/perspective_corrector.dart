@@ -7,10 +7,10 @@ class PerspectiveCorrector {
   Future<String> correctPerspective(
     String inputPath,
     String outputPath, {
-    double targetLeft = 0.15,
-    double targetTop = 0.3,
-    double targetRight = 0.85,
-    double targetBottom = 0.7,
+    double targetLeft = 0.35,
+    double targetTop = 0.15,
+    double targetRight = 0.65,
+    double targetBottom = 0.85,
   }) async {
     final imageFile = File(inputPath);
     final bytes = await imageFile.readAsBytes();

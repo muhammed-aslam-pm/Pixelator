@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pixelator/presentation/cubit/case_media_cubit.dart';
 import 'core/di/injection_container.dart' as di;
 import 'presentation/pages/splash_page.dart';
 import 'presentation/cubit/auth_cubit.dart';
@@ -20,6 +21,7 @@ class MyApp extends StatelessWidget {
       providers: [
         BlocProvider(create: (_) => di.sl<LoginCubit>()),
         BlocProvider(create: (_) => di.sl<AuthCubit>()),
+        BlocProvider(create: (_) => di.sl<CaseMediaCubit>()),
       ],
       child: MaterialApp(
         title: 'PIXELATOR',
