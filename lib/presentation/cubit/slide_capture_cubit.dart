@@ -220,11 +220,11 @@ class SlideCaptureCubit extends Cubit<SlideCaptureState> {
       emit(SlideCaptureCaptured(_cameraController!, capturedSlide));
 
       // Wait a moment before returning to ready state
-      await Future.delayed(const Duration(seconds: 2));
+      // await Future.delayed(const Duration(seconds: 2));
 
-      if (_cameraController != null && _cameraController!.value.isInitialized) {
-        emit(SlideCameraReady(_cameraController!));
-      }
+      // if (_cameraController != null && _cameraController!.value.isInitialized) {
+      //   emit(SlideCameraReady(_cameraController!));
+      // }
     } catch (e) {
       emit(SlideCaptureError('Failed to capture image: ${e.toString()}'));
       if (_cameraController != null && _cameraController!.value.isInitialized) {
